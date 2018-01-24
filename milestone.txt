@@ -1,0 +1,6 @@
+Milestone
+
+Current process
+
+1. Create level 1 visualization using types of pokemons in bubble chart.
+2. Preprocess the type count of pokemons.
