@@ -41,165 +41,92 @@ var pokecolor = {
 
 var pack = d3.pack()
     .size([width, height])
-    .padding(0);
+    .padding(1.5);
+
+var reDrawBar = function(typeName){
+	var margin = {top: 40, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 250 - margin.top - margin.bottom;
+
+    var x = d3.scaleBand()
+    .rangeRound([0, width], .1);
+
+	var y = d3.scaleLinear()
+    .range([height, 0]);
+
+    d3.select("#chart").selectAll("svg").remove();
+
+    var barsvg = d3.select("#chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var tip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(d) {
+    return "Name:" + d.name + "<br><strong>Combat Power:</strong> <span style='color:red'>" + d.cp + "</span>" ;
+  })
+
+    barsvg.call(tip);
+    d3.csv("pokemon_alopez247.csv", function(d){
+    	if(d.Type_1 == typeName || d.Type_2 == typeName) return d;
+    }, function(err, data){
+    	if(err) throw err;
+
+    	var newdata = []
+    	data.forEach(function(d){
+    		newdata.push({"name" : d.Name, "cp" : (+d.HP + +d.Attack + +d.Defense)});
+    	});
+    	newdata.sort(function(a, b){
+    		return b.cp - a.cp;
+    	})
+
+    	x.domain(newdata.map(function(d){ return d.name;}));
+    	y.domain([0, d3.max(newdata, function(d){ return d.cp;})]);
 
 
-var setup = function(targetID, typeName){
-	//Set size of svg element and chart
-	var margin = {top: 0, right: 0, bottom: 0, left: 0},
-		width = 600 - margin.left - margin.right,
-		height = 1000 - margin.top - margin.bottom,
-		categoryIndent = 4*15 + 5,
-		defaultBarWidth = 2000;
+    	var yAxis = d3.axisLeft()
+    				.scale(y)
+    				.tickFormat(format);
 
-	//Set up scales
-	var x = d3.scaleLinear()
-	  .domain([0,defaultBarWidth])
-	  .range([0,width]);
-	var y = d3.scaleBand()
-	  .rangeRound([0, height], 0.1, 0);
+    	barsvg.selectAll(".bar")
+    	.data(newdata)
+    	.enter()
+    	.append("rect")
+    	.attr("class", "bar")
+        .attr("x", function(d) { return x(d.name); })
+        .attr("width", x.bandwidth()*0.8)
+        .attr("height", 0)
+        .attr('stroke','black')
+        .attr('stroke-width',0)
+        .style("fill", pokecolor[typeName])
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide)
+        .on('click', function(d){
 
-	//Create SVG element
-	d3.select(targetID).selectAll("svg").remove()
-	var svg = d3.select(targetID).append("svg")
-		.attr("width", width + margin.left + margin.right)
-		.attr("height", height + margin.top + margin.bottom)
-	  .append("g")
-		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-	
-	//Package and export settings
-	var settings = {
-	  margin:margin, width:width, height:height, categoryIndent:categoryIndent,
-	  svg:svg, x:x, y:y, typeName:typeName
-	}
-	return settings;
+        	console.log(d);
+        })
+
+        barsvg.append("g")
+      	.attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("Frequency");
+
+        barsvg.selectAll(".bar").transition()
+        .duration(1000)
+        .attr("y", function(d) { return y(d.cp); })
+        .attr("height", function(d) { return height - y(d.cp); })
+
+
+    });
 }
 
-var redrawChart = function(settings, newdata) {
-
-	//Import settings
-	var margin=settings.margin, width=settings.width, height=settings.height, categoryIndent=settings.categoryIndent, 
-	svg=settings.svg, x=settings.x, y=settings.y;
-
-
-	//Reset domains
-	y.domain(newdata.sort(function(a,b){
-	  return b.value - a.value;
-	})
-	  .map(function(d) { return d.key; }));
-
-	var barmax = d3.max(newdata, function(e) {
-	  return e.value;
-	});
-
-	x.domain([0,barmax]);
-
-
-	/////////
-	//ENTER//
-	/////////
-
-	//Bind new data to chart rows 
-
-	//Create chart row and move to below the bottom of the chart
-	var chartRow = svg.selectAll("g.chartRow")
-					  .data(newdata);
-	
-	var newRow = chartRow
-	  .enter()
-	  .append("g")
-	  .attr("class", "chartRow")
-	  .attr("transform", function(d){ return "translate(0," + y(d.key) + ")";});
-	//Add rectangles
-	newRow.insert("rect")
-	  .attr("class","bar")
-	  .attr("x", 0)
-	  .attr("opacity",1)
-	  .attr("height", y.bandwidth()*2)
-	  .attr("width", function(d) { return x(d.value);});
-
-	//Add value labels
-	newRow.append("text")
-	  .attr("class","label")
-	  .attr("y", y.bandwidth()/2)
-	  .attr("x",0)
-	  .attr("opacity",1)
-	  .attr("dy",".35em")
-	  .attr("dx","0.5em")
-	  .text(function(d){ return d.value;}); 
-	
-	//Add Headlines
-	newRow.append("text")
-	  .attr("class","category")
-	  .attr("text-overflow","ellipsis")
-	  .attr("y", y.bandwidth()/2)
-	  .attr("x",categoryIndent)
-	  .attr("opacity",1)
-	  .attr("dy",".35em")
-	  .attr("dx","0.5em")
-	  .text(function(d){return d.key;});
-	
-
-	//Update bar widths
-	//console.log(chartRow.select(".bar").transition().duration(300));
-	// chartRow.select(".bar").transition()
-	//   .duration(300)
-	//   .attr("width", function(d) { console.log(d); return x(d.val);})
-	//   .attr("opacity",1);
-
-	// //Update data labels
-	// //console.log(chartRow.select(".label").transition().duration(300).attr("opacity",1));
-	// chartRow.select(".label").transition()
-	//   .duration(300)
-	//   .attr("opacity",1)
-	//   .tween("text", function(d) { 
-	//   	console.log(d);
-	// 	var i = d3.interpolate(+this.textContent.replace(/\,/g,''), +d.value);
-	// 	return function(t) {
-	// 	  this.textContent = Math.round(i(t));
-	// 	};
-	//   });
-
-	// //Fade in categories
-	// chartRow.select(".category").transition()
-	//   .duration(300)
-	//   .attr("opacity",1);
-
-	// //Fade out and remove exit elements
-	// chartRow.exit().transition()
-	//   .style("opacity","0")
-	//   .attr("transform", "translate(0," + (height + margin.top + margin.bottom) + ")")
-	//   .remove();
-
-	// var delay = function(d, i) { return 200 + i * 30; };
-	// chartRow.transition()
-	// 	.delay(delay)
-	// 	.duration(900)
-	// 	.attr("transform", function(d){ console.log(y(d.key)); return "translate(0," + y(d.key) + ")"; });
-
-};
-
-var pullData = function(settings,callback){
-	d3.csv("pokemon_alopez247.csv", function (err, data){
-		//console.log(settings.typeName);
-		var newdata = [];
-		data.forEach(function(d){
-			if(d.Type_1 == settings.typeName || d.Type_2 == settings.typeName) {
-				var cp = +d.HP + +d.Attack + +d.Defense;
-				newdata.push({"key": d.Name, "value" : +cp});
-			}
-		})
-		//console.log(newdata)
-		//newdata = formatData(newdata)
-		callback(settings,newdata);
-
-	})
-}
-//Sort data in descending order and take the top 10 values
-
-var redraw = function(settings){
-	pullData(settings,redrawChart)
-}
 
 d3.csv("types.csv", function(d) {
 	d.count = +d.count;
@@ -226,18 +153,19 @@ d3.csv("types.csv", function(d) {
 
     //console.log(node)
   node.append("circle")
-      .attr("type", function(d) { return d.data.type; })
+      .attr("id", function(d) { return d.data.type; })
       .attr("r", function(d) { return d.r; })
-      .style("fill", function(d, i) { return pokecolor[d.data.type]})
+      .style("fill", function(d) { return pokecolor[d.data.type]})
       .attr('stroke','black')
       .attr('stroke-width',0)
       .on('mouseover',function(d) {
       	//console.log(d);
       	var rad = 1.1 * d.r;
+
         d3.select(this)
       	  .transition()
       	  .duration(1000)
-      	  .attr("r", 1.1 * d.r );
+      	  .attr("r", 1.1 * d.r )
       	  tooltip.text(d.data.type + ": " + format(d.data.count));
           tooltip.style("visibility", "visible");
       })
@@ -245,15 +173,15 @@ d3.csv("types.csv", function(d) {
         d3.select(this)
           .transition()
           .duration(1000)
-          .attr("r", d.r);
+          .attr("r", d.r)
+    
         return tooltip.style("visibility", "hidden");
       })
       .on('mousemove', function(){ 
       	return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
       })
       .on('click', function(d){
-      	var settings = setup('#chart', d.data.type);
-      	redraw(settings)
+      	reDrawBar(d.data.type);
       	
       })
       
@@ -266,5 +194,9 @@ d3.csv("types.csv", function(d) {
             return d.data.type;
       });
 
+  reDrawBar("Steel");
+
 });
+
+
 
