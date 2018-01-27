@@ -1,4 +1,8 @@
 
+div.topic {
+  text-align: center;
+}
+
 .bar:hover {
 	stroke-width: 5px;
 	color: red;

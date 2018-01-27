@@ -43,6 +43,43 @@ var pack = d3.pack()
     .size([width, height])
     .padding(1.5);
 
+
+
+var updateRadar = function(pokeName, fillcolor, divID){
+	var radarwidth = 200;
+	var radarheight = 200;
+	var config = {
+    w: radarwidth,
+    h: radarheight,
+    maxValue: 1000,
+    levels: 5,
+    ExtraWidthX: 300,
+    fill: fillcolor
+	}
+
+	d3.csv("pokemon_alopez247.csv", function(d){
+		if(d.Name == pokeName) return d;
+	}, function(err, data){
+		if(err) throw err;
+
+		var pokeData = [];
+		data.forEach(function(d){
+			pokeData.push({"area" : "HP", "value" : +d.HP });
+			pokeData.push({"area" : "Attack", "value" : +d.Attack });
+			pokeData.push({"area" : "Defense", "value": +d.Defense });
+			pokeData.push({"area" : "Speed", "value" : +d.Speed });
+			pokeData.push({"area" : "Sp_Atk", "value" : +d.Sp_Atk});
+			pokeData.push({"area" : "Sp_Def", "value" : +d.Sp_Def});
+		});
+		var newpokeData = [];
+		newpokeData.push(pokeData);
+		RadarChart.draw(divID, newpokeData, config);
+		d3.select("h2").text(pokeName);
+	});
+
+
+}
+
 var reDrawBar = function(typeName){
 	var margin = {top: 40, right: 20, bottom: 30, left: 40},
     width = 960 - margin.left - margin.right,
@@ -105,8 +142,8 @@ var reDrawBar = function(typeName){
         .on('mouseover', tip.show)
         .on('mouseout', tip.hide)
         .on('click', function(d){
-
-        	console.log(d);
+        	updateRadar(d.name, pokecolor[typeName], "#radar");
+        	//console.log(d);
         })
 
         barsvg.append("g")
@@ -158,6 +195,7 @@ d3.csv("types.csv", function(d) {
       .style("fill", function(d) { return pokecolor[d.data.type]})
       .attr('stroke','black')
       .attr('stroke-width',0)
+      .attr("opacity", 0.8)
       .on('mouseover',function(d) {
       	//console.log(d);
       	var rad = 1.1 * d.r;

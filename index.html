@@ -3,6 +3,7 @@
 
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="d3.tip.js"></script>
+<script src="RadarChart.js"></script>
 
 <html>
 <head>
@@ -11,12 +12,16 @@
 </head>
 <meta charset="utf-8">
 <body>
-	<h1>Test</h1>
+	<div class="topic"><h1>Pokemon Table</h1></div>
 	
-	<div style="display: inline;">
+	<div style="display: inline-block;">
 		<svg class="bubble" width="400" height="400" font-family="sans-serif" font-size="10" text-anchor="middle" ></svg>
 		<script type="text/javascript" src="index.js"></script>
-		
+	</div>
+	<div id="radar" style="display: inline-block;">
+			<h2>Click a bar to get Pokemon's information!</h2>
+			<svg class="radat" width="400" height="200" font-family="sans-serif" font-size="10" text-anchor="middle" ></svg>
+			
 	</div>
 	<h2>Combat Power</h2>
 	<div id="chart" "></div>
